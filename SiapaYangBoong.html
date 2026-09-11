@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siapa yang Bohong? — Case #01</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --void:#0D0F14;
+  --panel:#171A21;
+  --panel-raised:#20242E;
+  --line:#2A2E38;
+  --text:#EDEAE3;
+  --text-muted:#8D909C;
+  --crimson:#B23A2E;
+  --crimson-glow:#E0574530;
+  --amber:#D6A344;
+  --amber-glow:#D6A34440;
+  --ok:#5FA678;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:radial-gradient(ellipse at top, #171B24 0%, var(--void) 60%);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+#app{max-width:900px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+.stamp{
+  font-family:'Special Elite',monospace;
+  color:var(--crimson);
+  border:2px solid var(--crimson);
+  display:inline-block;
+  padding:4px 14px;
+  transform:rotate(-3deg);
+  letter-spacing:2px;
+  font-size:13px;
+  opacity:0.85;
+}
+
+/* ---------- MENU ---------- */
+.menu-screen{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:32px 20px;gap:28px;
+}
+.menu-title{
+  font-family:'Special Elite',monospace;
+  font-size:clamp(30px,7vw,52px);
+  line-height:1.15;
+  color:var(--text);
+  text-shadow:0 0 18px var(--crimson-glow);
+}
+@media (prefers-reduced-motion: no-preference){
+  .menu-title{animation:flicker 6s infinite;}
+}
+@keyframes flicker{
+  0%,92%,100%{opacity:1;}
+  93%{opacity:0.75;}
+  94%{opacity:1;}
+  95%{opacity:0.55;}
+  96%{opacity:1;}
+}
+.menu-sub{color:var(--text-muted);font-size:15px;max-width:340px;}
+.menu-buttons{display:flex;flex-direction:column;gap:12px;width:100%;max-width:280px;}
+.btn{
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:15px;
+  padding:14px 22px;
+  border-radius:3px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--text);
+  cursor:pointer;
+  transition:border-color .15s ease, transform .1s ease;
+}
+.btn:hover{border-color:var(--amber);}
+.btn:active{transform:scale(0.98);}
+.btn-primary{background:var(--crimson);border-color:var(--crimson);color:#fff;}
+.btn-primary:hover{border-color:#fff;}
+.btn-ghost{background:transparent;}
+.btn:disabled{opacity:0.35;cursor:not-allowed;}
+.btn:disabled:hover{border-color:var(--line);}
+
+/* ---------- NAME INPUT ---------- */
+.panel-screen{flex:1;padding:28px 20px;display:flex;flex-direction:column;gap:18px;}
+.panel-heading{font-family:'Special Elite',monospace;font-size:22px;letter-spacing:1px;}
+.name-row{display:flex;align-items:center;gap:10px;}
+.name-row span{width:26px;color:var(--text-muted);font-size:14px;}
+.name-row input{
+  flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);
+  padding:10px 12px;border-radius:3px;font-family:'Inter';font-size:15px;
+}
+.name-row input:focus{outline:none;border-color:var(--amber);}
+
+/* ---------- BRIEFING ---------- */
+.briefing-text{
+  font-size:15.5px;line-height:1.7;color:var(--text);max-width:620px;
+  border-left:2px solid var(--crimson);padding-left:16px;
+}
+
+/* ---------- TOP BAR (in-scene) ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;border-bottom:1px solid var(--line);
+  font-family:'Special Elite',monospace;font-size:13px;letter-spacing:1px;
+  color:var(--text-muted);background:rgba(13,15,20,0.6);
+  position:sticky;top:0;z-index:5;
+}
+.topbar b{color:var(--text);}
+.topbar .tstats{display:flex;gap:16px;}
+
+/* ---------- SCENE ---------- */
+.scene{flex:1;display:flex;flex-direction:column;padding:22px 16px 90px;}
+.scene-label{text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:18px;letter-spacing:0.5px;}
+.hotspot-group{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:26px;}
+.hotspot{
+  background:var(--panel);border:1px solid var(--line);border-radius:4px;
+  padding:16px 14px;width:112px;text-align:center;cursor:pointer;
+  transition:border-color .15s ease, background .15s ease;
+  position:relative;
+}
+.hotspot:hover{border-color:var(--amber);background:var(--panel-raised);}
+.hotspot .icon{font-size:30px;display:block;margin-bottom:8px;}
+.hotspot .lbl{font-size:12.5px;color:var(--text-muted);}
+.hotspot.examined::after{
+  content:'✓';position:absolute;top:6px;right:8px;color:var(--ok);font-size:12px;font-weight:700;
+}
+.char-hotspot .icon{font-size:34px;}
+
+/* ---------- BOTTOM ACTION BAR ---------- */
+.actionbar{
+  position:fixed;bottom:0;left:0;right:0;
+  display:flex;justify-content:center;gap:10px;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top, var(--void) 60%, transparent);
+  z-index:10;
+}
+.actionbar .btn{flex:1;max-width:220px;font-size:13.5px;padding:12px 10px;}
+
+/* ---------- OVERLAY ---------- */
+.overlay-backdrop{
+  position:fixed;inset:0;background:rgba(6,7,10,0.72);
+  display:flex;align-items:flex-end;justify-content:center;z-index:20;
+  animation:fadein .15s ease;
+}
+@keyframes fadein{from{opacity:0;}to{opacity:1;}}
+.overlay-sheet{
+  background:var(--panel);border-top:1px solid var(--line);
+  width:100%;max-width:900px;max-height:82vh;overflow-y:auto;
+  border-radius:14px 14px 0 0;padding:22px 20px 26px;
+}
+.overlay-sheet.centered{
+  border-radius:10px;margin-bottom:auto;margin-top:auto;max-width:520px;
+}
+.overlay-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.overlay-title{font-family:'Special Elite',monospace;font-size:19px;}
+.close-x{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;}
+
+.dialogue-line{
+  background:var(--panel-raised);border-left:3px solid var(--amber);
+  padding:14px 16px;border-radius:0 6px 6px 0;margin-bottom:16px;
+  font-size:15px;line-height:1.6;
+}
+.dialogue-options{display:flex;flex-direction:column;gap:9px;}
+.opt-btn{
+  text-align:left;background:transparent;border:1px solid var(--line);
+  color:var(--text);padding:11px 14px;border-radius:5px;font-size:14.5px;
+  cursor:pointer;font-family:'Inter';
+}
+.opt-btn:hover{border-color:var(--amber);background:var(--panel-raised);}
+.opt-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.opt-btn:disabled:hover{border-color:var(--line);background:transparent;}
+
+.evidence-desc{font-size:14.5px;line-height:1.65;color:var(--text);margin-bottom:6px;}
+.evidence-tag{
+  display:inline-block;font-family:'Special Elite';font-size:11px;color:var(--crimson);
+  border:1px solid var(--crimson);padding:2px 8px;border-radius:3px;margin-bottom:12px;letter-spacing:1px;
+}
+
+/* ---------- BOARD ---------- */
+.board-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.chip{
+  background:var(--panel-raised);border:1px solid var(--line);border-radius:20px;
+  padding:8px 14px;font-size:13px;cursor:pointer;transition:border-color .15s;
+}
+.chip:hover{border-color:var(--amber);}
+.chip.selected{border-color:var(--amber);background:var(--amber-glow);}
+.chip.testimony{border-left:3px solid #6C7CE0;}
+.chip.evidence{border-left:3px solid var(--crimson);}
+.board-feedback{
+  font-size:14px;padding:12px 14px;border-radius:6px;background:var(--panel-raised);
+  border-left:3px solid var(--text-muted);margin-top:6px;
+}
+.board-feedback.success{border-left-color:var(--ok);color:var(--ok);}
+
+/* ---------- VERDICT ---------- */
+.verdict-step{margin-bottom:18px;}
+.verdict-step-label{font-size:12.5px;color:var(--text-muted);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;}
+.pick-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.pick-btn{
+  background:var(--panel-raised);border:1px solid var(--line);color:var(--text);
+  padding:9px 13px;border-radius:5px;font-size:13.5px;cursor:pointer;
+}
+.pick-btn:hover{border-color:var(--amber);}
+.pick-btn.chosen{border-color:var(--amber);background:var(--amber-glow);}
+
+/* ---------- RESULT ---------- */
+.result-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;text-align:center;gap:16px;}
+.result-status{font-family:'Special Elite';font-size:26px;}
+.result-status.solved{color:var(--ok);}
+.rank-box{
+  border:2px solid var(--amber);border-radius:8px;padding:18px 26px;margin:6px 0;
+  display:flex;flex-direction:column;gap:4px;min-width:220px;
+}
+.rank-letter{font-family:'Special Elite';font-size:38px;color:var(--amber);}
+.stat-line{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-muted);}
+.epilogue-text{max-width:520px;font-size:14.5px;line-height:1.7;color:var(--text-muted);border-top:1px solid var(--line);padding-top:16px;margin-top:6px;}
+
+.small-muted{font-size:12.5px;color:var(--text-muted);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============ DATA ============ */
+const state = {
+  screen:'menu',
+  names:{raka:'Raka', naya:'Naya', dinda:'Dinda', fajar:'Fajar', bimo:'Bimo'},
+  evidence:{}, // id -> true
+  flags:{dindaConfronted:false, boardConnected:false},
+  talkedTo:{}, // id -> true (unlocks their quote for verdict picker)
+  wrongTries:0,
+  elapsed:0,
+  timerId:null,
+  overlay:null, // {type:'dialogue', id} | {type:'evidence', id} | 'board' | 'verdict'
+  verdict:{suspect:null, lie:null, evidence:null},
+  history:[]
+};
+
+const EVIDENCE = {
+  cctv:{icon:'📹', title:'CCTV Pintu Masuk Lab', tag:'BUKTI 01', found:'Ditemukan di sudut ruangan',
+    desc:'Kamera cuma nyorot pintu masuk lab (blind spot ke meja instruktur). Rekaman nunjukin: {raka} masuk 14.48, {fajar} masuk 15.09, {naya} masuk 15.19, {naya} keluar 15.36. Nggak ada orang asing yang kecatet masuk.'},
+  gerbang:{icon:'🪪', title:'Log Swipe-Card Gerbang Gedung', tag:'BUKTI 02', found:'Diminta dari pos satpam',
+    desc:'Kartu akses {dinda} tercatat KELUAR gedung pukul 15.12 dan MASUK LAGI pukul 15.24. Nama lain nggak ada catatan keluar-masuk gedung di rentang waktu itu.'},
+  komputer:{icon:'💻', title:'Log Akses Komputer No. 3', tag:'BUKTI 03', found:'Diperiksa langsung dari komputer',
+    desc:'Login: 15.21. Logout: 15.34. Cocok sama pengakuan {naya} soal jam nge-print.'},
+  struk:{icon:'🧾', title:'Struk Print Center', tag:'BUKTI 04', found:'Ditemukan di dekat meja {naya}',
+    desc:'Struk cetak menunjukkan transaksi print jam 15.33. Mendukung alibi {naya}.'},
+  chat:{icon:'💬', title:'Chat {fajar} ke Temannya', tag:'BUKTI 05', found:'Ditunjukkan lewat HP tercecer',
+    desc:'"otw balik dari toilet nih" — terkirim jam 15.27. Konsisten sama cerita {fajar} soal ke toilet jam 15.25.'},
+  bukupiket:{icon:'📓', title:'Buku Piket Lab', tag:'BUKTI 06', found:'Ada di meja piket',
+    desc:'Kolom "keterangan" di jam 15.00–15.30 kosong nggak diisi — padahal biasanya asisten piket wajib nyatet siapa aja yang keluar-masuk tiap 15 menit.'}
+};
+
+function fill(str){
+  return str.replace(/\{(\w+)\}/g, (_,k)=> state.names[k] || k);
+}
+
+const OBJECTS = [
+  {id:'komputer', icon:'💻', label:'Komputer Lab'},
+  {id:'cctv', icon:'📹', label:'CCTV'},
+  {id:'bukupiket', icon:'📓', label:'Buku Piket'},
+  {id:'gerbang', icon:'🪪', label:'Pos Satpam'},
+  {id:'struk', icon:'🧾', label:'Meja {naya}'},
+  {id:'chat', icon:'📱', label:'HP Tercecer'},
+];
+
+const CHAR_ORDER = ['raka','naya','dinda','fajar','bimo'];
+const CHAR_ICON = {raka:'👤', naya:'👤', dinda:'👤', fajar:'👤', bimo:'👤'};
+
+function testimonyLaptop(id){
+  return {
+    raka:'"Gue nggak liat apa-apa soal laptop, headset kepasang terus dari tadi."',
+    naya:'"Gue cuma nge-print, nggak merhatiin meja instruktur sama sekali."',
+    dinda:'"Gue nggak liat apa-apa soal laptop itu. Beneran."',
+    fajar:'"Gue di pojok deket colokan, nggak ngeh soal laptop."',
+    bimo:'"Gue naruh laptop di meja instruktur abis dipake demo, terus gue ke ruang dosen ambil absen. Pas gue balik, laptopnya udah nggak ada."'
+  }[id];
+}
+function testimonyWaktu(id){
+  const n = state.names;
+  return {
+    raka:'"Gue dari jam 14.50-an di sini, duduk di pojok deket jendela. Headset kepasang terus."',
+    naya:`"Gue baru masuk sekitar jam 15.20-an. Pas keluar setengah 4-an, gue sempet liat ${n.bimo} lagi beres-beres di meja instruktur."`,
+    dinda:'"Gue piket dari jam 3 sampe jam 4, duduk terus di depan pintu masuk dari awal sampe akhir. Nggak ada orang asing yang masuk-keluar, gue yakin banget."',
+    fajar:'"Gue di sini dari jam 15.10-an. Sempet ke toilet bentar sekitar jam 15.25, abis itu balik lagi."',
+    bimo:'"Gue naruh laptop jam 3-an, terus ke ruang dosen. Balik sekitar setengah 4, laptopnya udah nggak ada."'
+  }[id];
+}
+
+const WRONG_SUSPECT_FEEDBACK = {
+  raka:'Nggak ada bukti yang membantah cerita Raka. Coba cek lagi timeline-nya.',
+  naya:'Struk print dan log komputer justru mendukung cerita Naya, bukan membantahnya.',
+  fajar:'Chat Fajar ke temennya konsisten sama waktu yang dia sebutin. Belum ada kontradiksi di sini.',
+  bimo:'Cerita Bimo memang nggak lengkap, tapi nggak ada satupun bukti yang membantahnya secara langsung.'
+};
+
+/* ============ TIMER ============ */
+function startTimer(){
+  if(state.timerId) return;
+  state.timerId = setInterval(()=>{ state.elapsed++; updateTopbarOnly(); }, 1000);
+}
+function stopTimer(){ clearInterval(state.timerId); state.timerId=null; }
+function fmtTime(s){
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  const sec = (s%60).toString().padStart(2,'0');
+  return m+':'+sec;
+}
+
+/* ============ RENDER ROOT ============ */
+function render(){
+  const app = document.getElementById('app');
+  let html = '';
+  if(state.screen==='menu') html = renderMenu();
+  else if(state.screen==='names') html = renderNames();
+  else if(state.screen==='briefing') html = renderBriefing();
+  else if(state.screen==='scene') html = renderScene();
+  else if(state.screen==='history') html = renderHistory();
+  else if(state.screen==='howto') html = renderHowTo();
+  else if(state.screen==='result') html = renderResult();
+
+  if(state.overlay) html += renderOverlay();
+  app.innerHTML = html;
+}
+function updateTopbarOnly(){
+  const el = document.getElementById('topbar-time');
+  if(el) el.textContent = fmtTime(state.elapsed);
+}
+
+/* ============ MENU ============ */
+function renderMenu(){
+  return `
+  <div class="menu-screen">
+    <div class="stamp">CASE FILE · TERBUKA</div>
+    <div>
+      <div class="menu-title">🕵️ Siapa yang<br>Bohong?</div>
+      <div class="menu-sub" style="margin-top:14px;">Pecahkan kasusnya. Jangan percaya siapapun — termasuk instingmu sendiri.</div>
+    </div>
+    <div class="menu-buttons">
+      <button class="btn btn-primary" onclick="goTo('names')">Mulai Kasus</button>
+      <button class="btn btn-ghost" onclick="goTo('history')">History</button>
+      <button class="btn btn-ghost" onclick="goTo('howto')">Cara Bermain</button>
+    </div>
+  </div>`;
+}
+
+function renderHowTo(){
+  return `
+  <div class="panel-screen">
+    <div class="panel-heading">Cara Bermain</div>
+    <div class="briefing-text" style="border-color:var(--amber);">
+      1. Jelajahi ruangan — klik objek buat menemukan bukti, klik orang buat ngobrol.<br><br>
+      2. Sebagian dialog cuma kebuka kalau kamu udah punya bukti tertentu. Coba tunjukkan bukti ke orang yang menurutmu mencurigakan.<br><br>
+      3. Buka <b>Papan Investigasi</b> buat menghubungkan testimoni dengan bukti yang bertentangan.<br><br>
+      4. Kalau udah nemu kontradiksi yang kuat, tombol <b>Tuduh</b> aktif. Pilih siapa yang bohong, kebohongan yang mana, dan bukti apa yang membuktikannya.
+    </div>
+    <button class="btn btn-ghost" style="align-self:flex-start;" onclick="goTo('menu')">← Kembali</button>
+  </div>`;
+}
+
+function renderHistory(){
+  const rows = state.history.length ? state.history.map(h=>`
+    <div style="border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:10px;">
+      <div style="font-family:'Special Elite';font-size:14px;color:var(--amber);">Case #01 — Laboratorium</div>
+      <div class="small-muted" style="margin-top:6px;">⏱ ${fmtTime(h.time)} &nbsp;·&nbsp; Rank ${h.rank} &nbsp;·&nbsp; Kesalahan: ${h.wrong}</div>
+    </div>`).join('') : `<div class="small-muted">Belum ada kasus yang diselesaikan.</div>`;
+  return `
+  <div class="panel-screen">
+    <div class="panel-heading">📜 History</div>
+    ${rows}
+    <button class="btn btn-ghost" style="align-self:flex-start;" onclick="goTo('menu')">← Kembali</button>
+  </div>`;
+}
+
+/* ============ NAME INPUT ============ */
+function renderNames(){
+  return `
+  <div class="panel-screen">
+    <div class="panel-heading">Siapa yang terlibat?</div>
+    <div class="small-muted">Nama-nama ini bakal dipakai langsung di dalam cerita.</div>
+    ${CHAR_ORDER.map((id,i)=>`
+      <div class="name-row">
+        <span>${i+1}.</span>
+        <input value="${state.names[id]}" oninput="state.names['${id}']=this.value" />
+      </div>`).join('')}
+    <button class="btn btn-primary" style="margin-top:6px;" onclick="goTo('briefing')">Lanjut</button>
+    <button class="btn btn-ghost" onclick="goTo('menu')">← Kembali</button>
+  </div>`;
+}
+
+/* ============ BRIEFING ============ */
+function renderBriefing(){
+  const n = state.names;
+  return `
+  <div class="panel-screen">
+    <div class="stamp">CASE 01</div>
+    <div class="panel-heading">Laptop yang Hilang</div>
+    <div class="briefing-text">
+      Kamis siang, laboratorium komputer Gedung C. Laptop yang biasa dipakai buat demo praktikum
+      tiba-tiba raib dari meja instruktur. Lima orang ada di sekitar lab pas kejadian ini terjadi:
+      <b>${n.raka}</b>, <b>${n.naya}</b>, <b>${n.dinda}</b>, <b>${n.fajar}</b>, dan <b>${n.bimo}</b>.
+      <br><br>
+      Salah satu dari mereka menyembunyikan sesuatu.
+      <br><br>
+      Tugasmu bukan cuma nemuin siapa yang ambil laptopnya — tapi nemuin siapa yang <b>bohong</b>,
+      bagian mana yang bohong, dan bukti apa yang bisa membuktikannya.
+    </div>
+    <button class="btn btn-primary" onclick="beginScene()">Mulai Investigasi</button>
+  </div>`;
+}
+function beginScene(){
+  state.screen='scene';
+  startTimer();
+  render();
+}
+
+/* ============ SCENE ============ */
+function clueCount(){ return Object.keys(state.evidence).length; }
+
+function renderScene(){
+  const n = state.names;
+  return `
+  <div class="topbar">
+    <span>CASE 01 · LAB KOMPUTER</span>
+    <div class="tstats">
+      <span>⏱ <b id="topbar-time">${fmtTime(state.elapsed)}</b></span>
+      <span>🔎 <b>${clueCount()}/6</b></span>
+    </div>
+  </div>
+  <div class="scene">
+    <div class="scene-label">Ruangan Lab · klik objek atau orang buat berinteraksi</div>
+    <div class="hotspot-group">
+      ${OBJECTS.map(o=>`
+        <div class="hotspot ${state.evidence[o.id]?'examined':''}" onclick="openEvidence('${o.id}')">
+          <span class="icon">${o.icon}</span>
+          <span class="lbl">${fill(o.label)}</span>
+        </div>`).join('')}
+    </div>
+    <div class="hotspot-group">
+      ${CHAR_ORDER.map(id=>`
+        <div class="hotspot char-hotspot ${state.talkedTo[id]?'examined':''}" onclick="openDialogue('${id}')">
+          <span class="icon">👤</span>
+          <span class="lbl">${n[id]}</span>
+        </div>`).join('')}
+    </div>
+  </div>
+  <div class="actionbar">
+    <button class="btn" onclick="openBoard()">🧩 Papan Investigasi</button>
+    <button class="btn ${state.flags.boardConnected?'btn-primary':''}" ${state.flags.boardConnected?'':'disabled'} onclick="openVerdict()">⚖️ Tuduh</button>
+  </div>`;
+}
+
+/* ============ EVIDENCE OVERLAY ============ */
+function openEvidence(id){
+  state.evidence[id] = true;
+  state.overlay = {type:'evidence', id};
+  render();
+}
+function renderEvidenceOverlay(id){
+  const e = EVIDENCE[id];
+  return `
+  <div class="overlay-backdrop" onclick="closeOverlayIfBackdrop(event)">
+    <div class="overlay-sheet centered">
+      <div class="overlay-header">
+        <div>
+          <div class="evidence-tag">${e.tag}</div>
+          <div class="overlay-title">${e.icon} ${fill(e.title)}</div>
+        </div>
+        <button class="close-x" onclick="closeOverlay()">✕</button>
+      </div>
+      <div class="small-muted" style="margin-bottom:10px;">${fill(e.found)}</div>
+      <div class="evidence-desc">${fill(e.desc)}</div>
+      <button class="btn" style="margin-top:8px;" onclick="closeOverlay()">Tutup</button>
+    </div>
+  </div>`;
+}
+
+/* ============ DIALOGUE OVERLAY ============ */
+function openDialogue(id){
+  state.talkedTo[id] = true;
+  state.overlay = {type:'dialogue', id, step:'root'};
+  render();
+}
+function dialogueChoose(step){
+  state.overlay.step = step;
+  render();
+}
+function renderDialogueOverlay(){
+  const id = state.overlay.id;
+  const name = state.names[id];
+  const step = state.overlay.step;
+
+  let line = '';
+  let options = [];
+
+  if(id==='dinda'){
+    if(step==='root'){
+      line = 'Dinda duduk di meja piket, agak gelisah.';
+      options = [
+        {label:'💬 Tanya soal laptop', to:'laptop'},
+        {label:'🕐 Tanya soal waktu', to:'waktu'},
+        {label:'👀 Tunjukkan bukti', to: state.evidence.gerbang ? 'confront1' : 'locked'},
+        {label:'🚶 Tinggalkan', to:'end'}
+      ];
+    } else if(step==='laptop'){
+      line = testimonyLaptop('dinda');
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='waktu'){
+      line = testimonyWaktu('dinda');
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='locked'){
+      line = '"Lah, mau nunjukkin apa?"';
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='confront1'){
+      line = 'Dinda kelihatan gugup. "...oke, oke. Gue emang sempet keluar bentar. Tapi itu nggak ada hubungannya sama laptop!"';
+      options = [
+        {label:'Keluar buat apa?', to:'confront2'},
+        {label:'← Kembali', to:'root'}
+      ];
+    } else if(step==='confront2'){
+      state.flags.dindaConfronted = true;
+      line = '"...gue ketemu orang bentar di luar gerbang. Urusan pribadi. Please jangan diumumin."<br><br><span style="color:var(--amber);">🔎 CLUE UPDATED — Dinda mengaku sempat ninggalin pos piket 12 menit, tapi bersikeras nggak ada hubungannya sama laptop yang hilang.</span>';
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='end'){
+      state.overlay = null; render(); return;
+    }
+  } else {
+    if(step==='root'){
+      line = `${name} menoleh ke arah kamu.`;
+      options = [
+        {label:'💬 Tanya soal laptop', to:'laptop'},
+        {label:'🕐 Tanya soal waktu', to:'waktu'},
+        {label:'👀 Tunjukkan bukti', to:'nobukti'},
+        {label:'🚶 Tinggalkan', to:'end'}
+      ];
+    } else if(step==='laptop'){
+      line = testimonyLaptop(id);
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='waktu'){
+      line = testimonyWaktu(id);
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='nobukti'){
+      line = `"Kayaknya nggak ada hubungannya deh sama gue," kata ${name}.`;
+      options = [{label:'← Kembali', to:'root'}];
+    } else if(step==='end'){
+      state.overlay = null; render(); return;
+    }
+  }
+
+  return `
+  <div class="overlay-backdrop" onclick="closeOverlayIfBackdrop(event)">
+    <div class="overlay-sheet" onclick="event.stopPropagation()">
+      <div class="overlay-header">
+        <div class="overlay-title">👤 ${name}</div>
+        <button class="close-x" onclick="closeOverlay()">✕</button>
+      </div>
+      <div class="dialogue-line">${line}</div>
+      <div class="dialogue-options">
+        ${options.map(o=>`<button class="opt-btn" onclick="dialogueChoose('${o.to}')">${o.label}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ BOARD OVERLAY ============ */
+let boardSelection = [];
+function openBoard(){
+  boardSelection = [];
+  state.overlay = {type:'board', feedback:null, feedbackOk:false};
+  render();
+}
+function boardPick(chipId){
+  if(boardSelection.includes(chipId)){
+    boardSelection = boardSelection.filter(c=>c!==chipId);
+  } else {
+    boardSelection.push(chipId);
+    if(boardSelection.length>2) boardSelection.shift();
+  }
+  if(boardSelection.length===2){
+    const set = boardSelection.slice().sort().join('|');
+    if(set === ['dinda-waktu','gerbang'].sort().join('|')){
+      state.flags.boardConnected = true;
+      state.overlay.feedback = '✨ CONNECTION FOUND — Klaim Dinda soal "terus jagain pintu" bertentangan dengan catatan akses gedung. Tombol Tuduh sudah aktif.';
+      state.overlay.feedbackOk = true;
+    } else {
+      state.overlay.feedback = 'Hubungan ini belum cukup kuat. Coba pasangan lain.';
+      state.overlay.feedbackOk = false;
+    }
+  } else {
+    state.overlay.feedback = null;
+  }
+  render();
+}
+function renderBoardOverlay(){
+  const n = state.names;
+  const chips = [];
+  if(state.talkedTo.dinda) chips.push({id:'dinda-waktu', label:`🗣 ${n.dinda}: "terus jagain pintu"`, cls:'testimony'});
+  if(state.talkedTo.raka) chips.push({id:'raka-waktu', label:`🗣 ${n.raka}: alibi pojok kelas`, cls:'testimony'});
+  if(state.talkedTo.naya) chips.push({id:'naya-waktu', label:`🗣 ${n.naya}: alibi ngeprint`, cls:'testimony'});
+  if(state.talkedTo.fajar) chips.push({id:'fajar-waktu', label:`🗣 ${n.fajar}: alibi ke toilet`, cls:'testimony'});
+  Object.keys(state.evidence).forEach(id=>{
+    chips.push({id, label: EVIDENCE[id].icon+' '+fill(EVIDENCE[id].title), cls:'evidence'});
+  });
+
+  return `
+  <div class="overlay-backdrop" onclick="closeOverlayIfBackdrop(event)">
+    <div class="overlay-sheet" onclick="event.stopPropagation()">
+      <div class="overlay-header">
+        <div class="overlay-title">🧩 Papan Investigasi</div>
+        <button class="close-x" onclick="closeOverlay()">✕</button>
+      </div>
+      <div class="small-muted" style="margin-bottom:14px;">Pilih dua item yang menurutmu saling bertentangan.</div>
+      <div class="board-grid">
+        ${chips.map(c=>`<div class="chip ${c.cls} ${boardSelection.includes(c.id)?'selected':''}" onclick="boardPick('${c.id}')">${c.label}</div>`).join('')}
+      </div>
+      ${chips.length<2 ? '<div class="small-muted">Ngobrol dan periksa lebih banyak objek dulu buat ngisi papan ini.</div>' : ''}
+      ${state.overlay.feedback ? `<div class="board-feedback ${state.overlay.feedbackOk?'success':''}">${state.overlay.feedback}</div>` : ''}
+      <button class="btn" style="margin-top:14px;" onclick="closeOverlay()">Tutup</button>
+    </div>
+  </div>`;
+}
+
+/* ============ VERDICT OVERLAY ============ */
+function openVerdict(){
+  state.verdict = {suspect:null, lie:null, evidence:null};
+  state.overlay = {type:'verdict'};
+  render();
+}
+function verdictPick(field, value){
+  state.verdict[field] = value;
+  render();
+}
+function submitVerdict(){
+  const v = state.verdict;
+  if(!v.suspect || !v.lie || !v.evidence){ return; }
+
+  if(v.suspect !== 'dinda'){
+    state.wrongTries++;
+    finishResult(false, WRONG_SUSPECT_FEEDBACK[v.suspect] || 'Belum ada bukti kuat ke arah situ.');
+    return;
+  }
+  if(v.lie !== 'dinda-waktu'){
+    state.wrongTries++;
+    finishResult(false, 'Kamu benar curiga ke Dinda, tapi pernyataan yang kamu pilih bukan yang kontradiktif. Coba cek lagi omongannya soal "jagain pintu".');
+    return;
+  }
+  if(v.evidence !== 'gerbang'){
+    state.wrongTries++;
+    finishResult(false, 'Kamu benar curiga ke Dinda dengan pernyataan yang tepat, tapi bukti yang kamu pasang belum cukup kuat membantahnya secara langsung. Cari bukti yang lebih langsung.');
+    return;
+  }
+  finishResult(true, null);
+}
+function finishResult(solved, reason){
+  stopTimer();
+  state.screen = 'result';
+  state.overlay = null;
+  state.result = {solved, reason};
+  if(solved){
+    let rank = 'S';
+    if(state.wrongTries>=3) rank='B';
+    else if(state.wrongTries===2) rank='A';
+    else if(state.wrongTries===1) rank='A';
+    state.history.push({time:state.elapsed, rank, wrong:state.wrongTries});
+    state.result.rank = rank;
+  }
+  render();
+}
+function renderVerdictOverlay(){
+  const n = state.names;
+  const v = state.verdict;
+  const lieOptions = [
+    {id:'dinda-waktu', label:`"${n.dinda}: terus jagain pintu dari jam 3-4"`, show:state.talkedTo.dinda},
+    {id:'raka-waktu', label:`"${n.raka}: di pojok, headset kepasang"`, show:state.talkedTo.raka},
+    {id:'naya-waktu', label:`"${n.naya}: nge-print jam 15.20-an"`, show:state.talkedTo.naya},
+    {id:'fajar-waktu', label:`"${n.fajar}: sempet ke toilet jam 15.25"`, show:state.talkedTo.fajar},
+    {id:'bimo-waktu', label:`"${n.bimo}: naruh laptop lalu ke ruang dosen"`, show:state.talkedTo.bimo},
+  ].filter(o=>o.show);
+
+  const evOptions = Object.keys(state.evidence).map(id=>({id, label:EVIDENCE[id].icon+' '+EVIDENCE[id].title}));
+
+  return `
+  <div class="overlay-backdrop" onclick="closeOverlayIfBackdrop(event)">
+    <div class="overlay-sheet" onclick="event.stopPropagation()">
+      <div class="overlay-header">
+        <div class="overlay-title">⚖️ Susun Tuduhan</div>
+        <button class="close-x" onclick="closeOverlay()">✕</button>
+      </div>
+
+      <div class="verdict-step">
+        <div class="verdict-step-label">1 · Siapa yang bohong</div>
+        <div class="pick-grid">
+          ${CHAR_ORDER.map(id=>`<button class="pick-btn ${v.suspect===id?'chosen':''}" onclick="verdictPick('suspect','${id}')">${n[id]}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="verdict-step">
+        <div class="verdict-step-label">2 · Kebohongannya yang mana</div>
+        <div class="pick-grid">
+          ${lieOptions.length ? lieOptions.map(o=>`<button class="pick-btn ${v.lie===o.id?'chosen':''}" onclick="verdictPick('lie','${o.id}')">${o.label}</button>`).join('') : '<span class="small-muted">Ngobrol dulu sama tersangkanya.</span>'}
+        </div>
+      </div>
+
+      <div class="verdict-step">
+        <div class="verdict-step-label">3 · Bukti pembuktinya</div>
+        <div class="pick-grid">
+          ${evOptions.length ? evOptions.map(o=>`<button class="pick-btn ${v.evidence===o.id?'chosen':''}" onclick="verdictPick('evidence','${o.id}')">${o.label}</button>`).join('') : '<span class="small-muted">Kamu belum kumpulin bukti apapun.</span>'}
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="submitVerdict()" ${(!v.suspect||!v.lie||!v.evidence)?'disabled':''}>Ajukan Tuduhan</button>
+    </div>
+  </div>`;
+}
+
+/* ============ RESULT SCREEN ============ */
+function renderResult(){
+  const r = state.result;
+  if(r.solved){
+    return `
+    <div class="result-screen">
+      <div class="result-status solved">✅ CASE SOLVED</div>
+      <div class="rank-box">
+        <div class="rank-letter">${r.rank}</div>
+        <div class="stat-line"><span>Waktu</span><span>${fmtTime(state.elapsed)}</span></div>
+        <div class="stat-line"><span>Bukti</span><span>${clueCount()}/6</span></div>
+        <div class="stat-line"><span>Kesalahan</span><span>${state.wrongTries}</span></div>
+      </div>
+      <div class="epilogue-text">
+        Dinda menghela napas panjang. "...Iya. Gue emang keluar bentar. Tapi serius, itu nggak ada hubungannya sama laptop yang ilang." Dan ternyata dia benar.
+        <br><br>
+        Malemnya, ${state.names.bimo} nemuin laptopnya sendiri — ketutup tumpukan lembar jawaban praktikum, persis di meja yang sama tempat dia naruhnya tadi siang.
+        <br><br>
+        <i>Nggak ada yang nyuri apa-apa. Tapi satu kebohongan kecil, hampir aja bikin orang yang salah dituduh.</i>
+      </div>
+      <button class="btn btn-primary" onclick="resetGame()">Kembali ke Menu</button>
+    </div>`;
+  }
+  return `
+    <div class="result-screen">
+      <div class="result-status" style="color:var(--crimson);">❌ TUDUHAN MELESET</div>
+      <div class="briefing-text" style="text-align:left;">${r.reason}</div>
+      <button class="btn btn-primary" onclick="backToSceneAfterFail()">Coba Lagi</button>
+    </div>`;
+}
+function backToSceneAfterFail(){
+  state.screen='scene';
+  startTimer();
+  render();
+}
+function resetGame(){
+  location.reload();
+}
+
+/* ============ OVERLAY DISPATCH ============ */
+function renderOverlay(){
+  if(state.overlay.type==='evidence') return renderEvidenceOverlay(state.overlay.id);
+  if(state.overlay.type==='dialogue') return renderDialogueOverlay();
+  if(state.overlay.type==='board') return renderBoardOverlay();
+  if(state.overlay.type==='verdict') return renderVerdictOverlay();
+  return '';
+}
+function closeOverlay(){ state.overlay = null; render(); }
+function closeOverlayIfBackdrop(e){ if(e.target.classList.contains('overlay-backdrop')) closeOverlay(); }
+
+/* ============ NAV ============ */
+function goTo(screen){ state.screen = screen; state.overlay=null; render(); }
+
+render();
+</script>
+</body>
+</html>
